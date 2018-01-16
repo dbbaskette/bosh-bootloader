@@ -61,20 +61,6 @@ var _ = Describe("TemplateGenerator", func() {
 		})
 	})
 
-	Describe("GenerateInstanceGroups", func() {
-		BeforeEach(func() {
-			var err error
-			expectedTemplate, err = ioutil.ReadFile("fixtures/instance_groups.tf")
-			Expect(err).NotTo(HaveOccurred())
-		})
-
-		It("returns a backend service terraform template", func() {
-			template := templateGenerator.GenerateInstanceGroups(zones)
-
-			Expect(template).To(Equal(string(expectedTemplate)))
-		})
-	})
-
 	Describe("GenerateSubnetCidrs", func() {
 		BeforeEach(func() {
 			var err error

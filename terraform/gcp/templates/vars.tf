@@ -10,6 +10,14 @@ variable "zone" {
   type = "string"
 }
 
+variable "zones" {
+  type = "list"
+}
+
+variable "restrict_instance_groups" {
+  default = false
+}
+
 variable "env_id" {
   type = "string"
 }
