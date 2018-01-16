@@ -155,6 +155,7 @@ output "subnet_cidr_3" {
 		})
 	})
 
+<<<<<<< HEAD
 	Describe("GenerateBackendService", func() {
 		It("returns a backend service terraform template", func() {
 			template := templateGenerator.GenerateBackendService(zones)
@@ -169,6 +170,8 @@ output "subnet_cidr_3" {
 		})
 	})
 
+=======
+>>>>>>> Enable restricting instance_groups to just 2.
 	Describe("GenerateSubnetCidrs", func() {
 		BeforeEach(func() {
 			expectedTemplate = subnetCIDRs
