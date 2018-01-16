@@ -1,7 +1,7 @@
 resource "google_compute_instance_group" "router-lb-0" {
-  name        = "${var.env_id}-router-lb-0-z1"
+  name        = "${var.env_id}-router-lb-0-${element(var.zones, 0)}"
   description = "terraform generated instance group that is multi-zone for https loadbalancing"
-  zone        = "z1"
+  zone        = "${element(var.zones, 0)}"
 
   named_port {
     name = "https"
@@ -10,9 +10,9 @@ resource "google_compute_instance_group" "router-lb-0" {
 }
 
 resource "google_compute_instance_group" "router-lb-1" {
-  name        = "${var.env_id}-router-lb-1-z2"
+  name        = "${var.env_id}-router-lb-1-${element(var.zones, 1)}"
   description = "terraform generated instance group that is multi-zone for https loadbalancing"
-  zone        = "z2"
+  zone        = "${element(var.zones, 1)}"
 
   named_port {
     name = "https"
@@ -21,9 +21,10 @@ resource "google_compute_instance_group" "router-lb-1" {
 }
 
 resource "google_compute_instance_group" "router-lb-2" {
-  name        = "${var.env_id}-router-lb-2-z3"
+  count       = "${var.restrict_instance_groups ? 0 : 1}"
+  name        = "${var.env_id}-router-lb-2-${element(var.zones, 2)}"
   description = "terraform generated instance group that is multi-zone for https loadbalancing"
-  zone        = "z3"
+  zone        = "${element(var.zones, 2)}"
 
   named_port {
     name = "https"

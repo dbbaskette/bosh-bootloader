@@ -6,8 +6,13 @@ variable "ssl_certificate_private_key" {
   type = "string"
 }
 
+locals {
+  router_lb_backend_service_name = "${var.restrict_instance_groups ? join(" ", google_compute_backend_service.router-lb-backend-service-restricted.*.name) : join(" ", google_compute_backend_service.router-lb-backend-service.*.name) }"
+  router_lb_backend_service_self_link = "${var.restrict_instance_groups ? join(" ", google_compute_backend_service.router-lb-backend-service-restricted.*.self_link) : join(" ", google_compute_backend_service.router-lb-backend-service.*.self_link)}"
+}
+
 output "router_backend_service" {
-  value = "${google_compute_backend_service.router-lb-backend-service.name}"
+  value = "${local.router_lb_backend_service_name}"
 }
 
 output "router_lb_ip" {
@@ -42,7 +47,7 @@ resource "google_compute_firewall" "firewall-cf" {
 
   source_ranges = ["0.0.0.0/0"]
 
-  target_tags = ["${google_compute_backend_service.router-lb-backend-service.name}"]
+  target_tags = ["${local.router_lb_backend_service_name}"]
 }
 
 resource "google_compute_global_address" "cf-address" {
@@ -90,7 +95,7 @@ resource "google_compute_ssl_certificate" "cf-cert" {
 resource "google_compute_url_map" "cf-https-lb-url-map" {
   name = "${var.env_id}-cf-http"
 
-  default_service = "${google_compute_backend_service.router-lb-backend-service.self_link}"
+  default_service = "${local.router_lb_backend_service_self_link}"
 }
 
 resource "google_compute_health_check" "cf-public-health-check" {
@@ -119,7 +124,7 @@ resource "google_compute_firewall" "cf-health-check" {
   }
 
   source_ranges = ["130.211.0.0/22", "35.191.0.0/16"]
-  target_tags   = ["${google_compute_backend_service.router-lb-backend-service.name}"]
+  target_tags   = ["${local.router_lb_backend_service_name}"]
 }
 
 output "ssh_proxy_target_pool" {

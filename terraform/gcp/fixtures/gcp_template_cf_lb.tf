@@ -10,6 +10,14 @@ variable "zone" {
   type = "string"
 }
 
+variable "zones" {
+  type = "list"
+}
+
+variable "restrict_instance_groups" {
+  default = false
+}
+
 variable "env_id" {
   type = "string"
 }
@@ -194,8 +202,13 @@ variable "ssl_certificate_private_key" {
   type = "string"
 }
 
+locals {
+  router_lb_backend_service_name = "${var.restrict_instance_groups ? join(" ", google_compute_backend_service.router-lb-backend-service-restricted.*.name) : join(" ", google_compute_backend_service.router-lb-backend-service.*.name) }"
+  router_lb_backend_service_self_link = "${var.restrict_instance_groups ? join(" ", google_compute_backend_service.router-lb-backend-service-restricted.*.self_link) : join(" ", google_compute_backend_service.router-lb-backend-service.*.self_link)}"
+}
+
 output "router_backend_service" {
-  value = "${google_compute_backend_service.router-lb-backend-service.name}"
+  value = "${local.router_lb_backend_service_name}"
 }
 
 output "router_lb_ip" {
@@ -230,7 +243,7 @@ resource "google_compute_firewall" "firewall-cf" {
 
   source_ranges = ["0.0.0.0/0"]
 
-  target_tags = ["${google_compute_backend_service.router-lb-backend-service.name}"]
+  target_tags = ["${local.router_lb_backend_service_name}"]
 }
 
 resource "google_compute_global_address" "cf-address" {
@@ -278,7 +291,7 @@ resource "google_compute_ssl_certificate" "cf-cert" {
 resource "google_compute_url_map" "cf-https-lb-url-map" {
   name = "${var.env_id}-cf-http"
 
-  default_service = "${google_compute_backend_service.router-lb-backend-service.self_link}"
+  default_service = "${local.router_lb_backend_service_self_link}"
 }
 
 resource "google_compute_health_check" "cf-public-health-check" {
@@ -307,7 +320,7 @@ resource "google_compute_firewall" "cf-health-check" {
   }
 
   source_ranges = ["130.211.0.0/22", "35.191.0.0/16"]
-  target_tags   = ["${google_compute_backend_service.router-lb-backend-service.name}"]
+  target_tags   = ["${local.router_lb_backend_service_name}"]
 }
 
 output "ssh_proxy_target_pool" {
@@ -460,9 +473,9 @@ resource "google_compute_forwarding_rule" "credhub" {
 }
 
 resource "google_compute_instance_group" "router-lb-0" {
-  name        = "${var.env_id}-router-lb-0-z1"
+  name        = "${var.env_id}-router-lb-0-${element(var.zones, 0)}"
   description = "terraform generated instance group that is multi-zone for https loadbalancing"
-  zone        = "z1"
+  zone        = "${element(var.zones, 0)}"
 
   named_port {
     name = "https"
@@ -471,9 +484,9 @@ resource "google_compute_instance_group" "router-lb-0" {
 }
 
 resource "google_compute_instance_group" "router-lb-1" {
-  name        = "${var.env_id}-router-lb-1-z2"
+  name        = "${var.env_id}-router-lb-1-${element(var.zones, 1)}"
   description = "terraform generated instance group that is multi-zone for https loadbalancing"
-  zone        = "z2"
+  zone        = "${element(var.zones, 1)}"
 
   named_port {
     name = "https"
@@ -482,9 +495,10 @@ resource "google_compute_instance_group" "router-lb-1" {
 }
 
 resource "google_compute_instance_group" "router-lb-2" {
-  name        = "${var.env_id}-router-lb-2-z3"
+  count       = "${var.restrict_instance_groups ? 0 : 1}"
+  name        = "${var.env_id}-router-lb-2-${element(var.zones, 2)}"
   description = "terraform generated instance group that is multi-zone for https loadbalancing"
-  zone        = "z3"
+  zone        = "${element(var.zones, 2)}"
 
   named_port {
     name = "https"
@@ -492,7 +506,27 @@ resource "google_compute_instance_group" "router-lb-2" {
   }
 }
 
+resource "google_compute_backend_service" "router-lb-backend-service-restricted" {
+  count       = "${var.restrict_instance_groups}"
+  name        = "${var.env_id}-router-lb"
+  port_name   = "https"
+  protocol    = "HTTPS"
+  timeout_sec = 900
+  enable_cdn  = false
+
+  backend {
+    group = "${google_compute_instance_group.router-lb-0.self_link}"
+  }
+
+  backend {
+    group = "${google_compute_instance_group.router-lb-1.self_link}"
+  }
+
+  health_checks = ["${google_compute_health_check.cf-public-health-check.self_link}"]
+}
+
 resource "google_compute_backend_service" "router-lb-backend-service" {
+  count       = "${1 - var.restrict_instance_groups}"
   name        = "${var.env_id}-router-lb"
   port_name   = "https"
   protocol    = "HTTPS"
