@@ -1,42 +1,3 @@
-<<<<<<< HEAD:terraform/gcp/templates/bosh_director.tf
-variable "subnet_cidr" {
-  type    = "string"
-  default = "10.0.0.0/16"
-=======
-variable "project_id" {
-  type = "string"
-}
-
-variable "region" {
-  type = "string"
-}
-
-variable "zone" {
-  type = "string"
-}
-
-variable "zones" {
-  type = "list"
-}
-
-variable "restrict_instance_groups" {
-  default = false
-}
-
-variable "env_id" {
-  type = "string"
-}
-
-variable "credentials" {
-  type = "string"
-}
-
-provider "google" {
-  credentials = "${file("${var.credentials}")}"
-  project     = "${var.project_id}"
-  region      = "${var.region}"
-}
-
 output "network_name" {
   value = "${google_compute_network.bbl-network.name}"
 }
@@ -59,7 +20,6 @@ output "jumpbox_tag_name" {
 
 output "internal_tag_name" {
   value = "${google_compute_firewall.internal.name}"
->>>>>>> Enable restricting instance_groups to just 2.:terraform/gcp/fixtures/gcp_template_no_lb.tf
 }
 
 resource "google_compute_network" "bbl-network" {
